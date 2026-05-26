@@ -8,7 +8,7 @@ Contains support for electric forces, magnetic forces, lorentz forces, collision
 1. Clone the repository
 ```
 git clone https://github.com/Lem0nCream/PhysicsSim.git
-cd PhysicsSimApp
+cd PhysicsSim
 ```
 2. Run the simulation
 ```
