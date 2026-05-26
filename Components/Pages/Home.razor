@@ -1,0 +1,408 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject Manager manager
+
+<h1>Physics Simulation</h1>
+
+<canvas id="simCanvas"
+        width="1000"
+        height="500"
+        style="border:10px solid black;">
+</canvas>
+<hr>
+<button @onclick="RestartSim">Restart</button>
+<hr>
+    <label for="scale">Meters per pixel: </label>
+<input type="text" id="scale" placeholder="Meters per pixel" @bind="scale">
+<p>1px = @scale m</p>
+<hr>
+<div class="input-group">
+    <label for="magneticFieldStrength">Magnetic Field Strength (T) : </label>
+    <input type="text" id="magneticFieldStrength" placeholder="Magnetic Field Strength (T)" @bind="magneticFieldStrength">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="isMagnetic">Is Magnetic? : </label>
+    <input type="checkbox" @bind="isMagnetic">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="charge">Charge (C) : </label>
+    <input type="text" id="charge" placeholder="Charge (C)" @bind="charge">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="resistance">Resistance (Ω) : </label>
+    <input type="text" id="resistance" placeholder="Resistance (Ω)" @bind="resistance">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="conductivity">Conductivity (S/m) : </label>
+    <input type="text" id="conductivity" placeholder="Conductivity (S/m)" @bind="conductivity">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="mass">Mass (kg) : </label>
+    <input type="text" id="mass" placeholder="Mass (kg)" @bind="mass">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="isStatic">Is Static? : </label>
+    <input type="checkbox" @bind="isStatic">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="isBattery">Is a Battery? : </label>
+    <input type="checkbox" @bind="isBattery">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="voltage">Voltage (V) : </label>
+    <input type="text" id="voltage" placeholder="Voltage (V)" @bind="voltage">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="xVelocity">X Velocity (px/tick) : </label>
+    <input type="text" id="xVelocity" placeholder="X Velocity (px/tick)" @bind="xVelocity">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="yVelocity">Y Velocity (px/tick) : </label>
+    <input type="text" id="yVelocity" placeholder="Y Velocity (px/tick)" @bind="yVelocity">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="length">Length (px) : </label>
+    <input type="text" id="length" placeholder="Length (px)" @bind="length">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="height">Height (px) : </label>
+    <input type="text" id="height" placeholder="Height (px)" @bind="height">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="color">Color (Hex Code) : </label>
+    <input type="text" id="color" placeholder="Color (Hex Code)" @bind="color">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="friction">Friction (0-1) : </label>
+    <input type="text" id="friction" placeholder="Friction (0-1)" @bind="friction">
+</div>
+<hr>
+
+<div class="input-group">
+    <label for="collideScale">Collision Scale (0-1) : </label>
+    <input type="text" id="collideScale" placeholder="Collision Scale (0-1)" @bind="collideScale">
+</div>
+<hr>
+
+<button @onclick="PresetBattery">Preset Battery</button>
+<button @onclick="PresetResistor">Preset Resistor</button>
+<button @onclick="PresetVerticalWire">Preset Vertical Wire</button>
+<button @onclick="PresetHorizontalWire">Preset Horizontal Wire</button>
+<button @onclick="PresetMagneticParticle">Preset Magnetic Particle</button>
+<button @onclick="PresetChargeParticle">Preset Charged Particle</button>
+
+@implements IAsyncDisposable
+@code {
+    private bool hasStarted = false;
+    private readonly Random _random = new();
+    private DotNetObjectReference<Home>? _dotNetRef;
+    public string scale = "1";
+
+    //object properties
+    public float magneticFieldStrength = 0;
+    public bool isMagnetic = false;
+    public float charge = 0;
+    public float resistance = 0;
+    public float conductivity = 0;
+    public float mass = 1;
+    public bool isStatic = true;
+    public bool isBattery = false;
+    public float voltage = 0;
+    public Vector2 center;
+    public float xVelocity = 0;
+    public float yVelocity = 0;
+    public Vector2 velocity = new Vector2(0, 0);
+    public float length = 8;
+    public float height = 8;
+    public string color = "#000000";
+    public float friction = 0;
+    public float collideScale = 1;
+public void PresetBattery()
+{
+    magneticFieldStrength = 0;
+    isMagnetic = false;
+    charge = 0;
+    resistance = 0;
+    conductivity = 10;
+    mass = 10;
+    isStatic = true;
+    isBattery = true;
+    voltage = 9;
+    xVelocity = 0;
+    yVelocity = 0;
+    length = 25;
+    height = 25;
+    color = "#F54D27";
+    friction = 0;
+    collideScale = 1;
+}
+public void PresetVerticalWire()
+{
+    magneticFieldStrength = 0;
+    isMagnetic = false;
+    charge = 0;
+    resistance = 1;
+    conductivity = 10;
+    mass = 5;
+    isStatic = true;
+    isBattery = false;
+    voltage = 0;
+    xVelocity = 0;
+    yVelocity = 0;    
+    length = 5;
+    height = 250;
+    color = "#828285";
+    friction = 0;
+    collideScale = 1;
+}
+public void PresetHorizontalWire()
+{
+    magneticFieldStrength = 0;
+    isMagnetic = false;
+    charge = 0;
+    resistance = 1;
+    conductivity = 10;
+    mass = 5;
+    isStatic = true;
+    isBattery = false;
+    voltage = 0;
+    xVelocity = 0;
+    yVelocity = 0;    
+    length = 250;
+    height = 5;
+    color = "#828285";
+    friction = 0;
+    collideScale = 1;
+}
+public void PresetMagneticParticle()
+{
+    magneticFieldStrength = 10;
+    isMagnetic = true;
+    charge = 0;
+    resistance = 5;
+    conductivity = 10;
+    mass = 2;
+    isStatic = false;
+    isBattery = false;
+    voltage = 0;
+    xVelocity = 10-Random.Shared.Next(0,20);
+    yVelocity = 10-Random.Shared.Next(0,20);
+    length = 10;
+    height = 10;
+    color = "#2731f5";
+    friction = 0.01f;
+    collideScale = 0.75f;
+}
+public void PresetChargeParticle()
+{
+    magneticFieldStrength = 0;
+    isMagnetic = false;
+    charge = 0.0001f;
+    resistance = 5;
+    conductivity = 10;
+    mass = 2;
+    isStatic = false;
+    isBattery = false;
+    voltage = 0;
+    xVelocity = 10-Random.Shared.Next(0,20);
+    yVelocity = 10-Random.Shared.Next(0,20);
+    length = 10;
+    height = 10;
+    color = "#c227f5";
+    friction = 0.01f;
+    collideScale = 0.75f;
+}
+public void PresetResistor()
+{
+    magneticFieldStrength = 0;
+    isMagnetic = false;
+    charge = 0;
+    resistance = 10;
+    conductivity = 10;
+    mass = 5;
+    isStatic = true;
+    isBattery = false;
+    voltage = 0;
+    xVelocity = 0;
+    yVelocity = 0;    
+    length = 15;
+    height = 15;
+    color = "#474749";
+    friction = 0;
+    collideScale = 1;
+}
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{    
+	if (firstRender && !hasStarted)
+    {
+        hasStarted = true;
+        await StartSim();
+    }
+}
+private CancellationTokenSource _cts;
+
+protected override void OnInitialized()
+{
+    _cts = new CancellationTokenSource();
+    _ = GameLoop(_cts.Token);
+}
+private async Task GameLoop(CancellationToken token)
+{
+    const float tickRate = 1f / 60f;
+    float accumulator = 0f;
+
+    const int renderRateMs = 50;
+    int renderAccumulator = 0;
+
+    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+    long lastTime = stopwatch.ElapsedMilliseconds;
+
+    while (!token.IsCancellationRequested)
+    {
+        long currentTime = stopwatch.ElapsedMilliseconds;
+        float deltaTime = (currentTime - lastTime) / 1000f;
+        lastTime = currentTime;
+
+        accumulator += deltaTime;
+        renderAccumulator += (int)(deltaTime * 1000);
+
+        while (accumulator >= tickRate)
+        {
+            FixedUpdate(tickRate);
+            accumulator -= tickRate;
+        }
+
+        if (renderAccumulator >= renderRateMs)
+        {
+            Render();
+            SlowUpdate();
+            renderAccumulator = 0;
+        }
+
+        await Task.Delay(16, token);
+        manager.deltaTime = tickRate;
+    }
+}
+    public async Task  FixedUpdate(float deltaTime)
+    {
+        foreach (var a in manager.objects)
+        {
+            if (!a.isStatic)
+            {
+                manager.CheckMagneticForces(a);
+                manager.CheckElectricForces(a);
+                manager.CheckLorentzForces(a);
+            }
+        }
+        foreach (var a in manager.objects)
+        {
+            if (!a.isStatic)
+            {
+                a.ApplyVelocity(deltaTime);
+            }
+        }
+        foreach (var a in manager.objects)
+        {
+            if (!a.isStatic)
+            {
+                manager.CheckCollision(a);
+            }
+        }
+    }
+    public async Task SlowUpdate()
+    {
+        List<PhysicsSimApp.Components.Object> conductiveTouchies = new List<PhysicsSimApp.Components.Object>();
+        foreach (PhysicsSimApp.Components.Object o in manager.objects)
+        {
+            if (o.conductivity <= 0) continue;
+            var cols = manager.GetCollisions(o);
+            foreach (PhysicsSimApp.Components.Object a in cols)
+            {
+                if (a.conductivity > 0)
+                conductiveTouchies.Add(a);
+            }
+        }
+        manager.AddCircuit(conductiveTouchies);
+    }
+public async Task Render()
+{
+    var data = manager.objects.Select(o => new{ x = o.pos.X, y = o.pos.Y, l = o.length, h = o.height, c = o.color});
+    await JS.InvokeVoidAsync("sim.renderFrame", data);
+}
+private async Task StartSim()
+{
+    scale = manager.distScale.ToString();
+    try
+    {
+        if (JS is null)
+        {
+            return;
+        }
+        await JS.InvokeVoidAsync("sim.start");
+
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("sim.registerCanvasClickHandler", _dotNetRef);
+    }
+        catch (Exception ex)
+    {
+    }
+}
+private async Task RestartSim()
+{
+    for (int i = manager.objects.Count - 1; i >= 0; i--)
+    {
+        manager.objects.RemoveAt(i);
+    }
+}
+[JSInvokable]
+public Task SpawnOnClick(float x, float y)
+{
+    var obj = new PhysicsSimApp.Components.Object();
+    obj.BuildObject(magneticFieldStrength, isMagnetic, charge, resistance, conductivity, mass, isStatic, isBattery, voltage, new Vector2(x-length/2,y-height/2), new Vector2(xVelocity, yVelocity), length, height, color, friction, collideScale);
+    manager.objects.Add(obj);
+    return Task.CompletedTask;
+
+}
+
+public async ValueTask DisposeAsync()
+{
+    if (_dotNetRef is not null)
+    {
+        await JS.InvokeVoidAsync("sim.unregisterCanvasClickHandler");
+        _dotNetRef.Dispose();
+        _dotNetRef = null;
+    }
+
+    _cts?.Cancel();
+    _cts?.Dispose();
+}
+}
